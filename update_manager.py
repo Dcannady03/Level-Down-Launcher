@@ -3,44 +3,51 @@ import hashlib
 import json
 import requests
 
-# Paths
-manifest_url = "https://github.com/Dcannady03/Level-Down-Launcher/tree/main/assets/configmanifest.json"  # URL of remote manifest
-base_file_url = "https://yourserver.com/path/to/files"         # URL where individual files are stored
+# Paths to local and remote files
 local_manifest_path = "assets/config/manifest.json"
-directories_to_verify = ["_internal", "assets"]
+previous_manifest_path = "assets/config/previous_manifest.json"
+version_file_path = "assets/config/version.json"
 
-# Excluded files
-excluded_files = ["assets/settings.json"]
+manifest_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher/assets/config/manifest.json"
+version_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher/assets/config/version.json"
+base_file_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher"
 
-# Load the remote manifest
-response = requests.get(manifest_url)
-if response.status_code == 200:
-    remote_manifest = response.json()
-else:
-    print("Failed to download the remote manifest.")
-    exit()
+# Load JSON file
+def load_json(path):
+    with open(path, "r") as file:
+        return json.load(file)
 
-# Load the local manifest
-with open(local_manifest_path, "r") as manifest_file:
-    local_manifest = json.load(manifest_file)
+# Save JSON file
+def save_json(path, data):
+    with open(path, "w") as file:
+        json.dump(data, file, indent=4)
 
-# Function to calculate SHA-256 hash of a file
-def calculate_sha256(filepath):
-    sha256_hash = hashlib.sha256()
-    with open(filepath, "rb") as file:
-        for byte_block in iter(lambda: file.read(4096), b""):
-            sha256_hash.update(byte_block)
-    return sha256_hash.hexdigest()
+# Load version info
+def get_local_version():
+    return load_json(version_file_path).get("version", "0.0")
 
-# Function to download a file
+def get_remote_version():
+    response = requests.get(version_url)
+    if response.status_code == 200:
+        return response.json().get("version", "0.0")
+    else:
+        print("Failed to fetch remote version.")
+        return None
+
+# Check for changed files based on manifest comparison
+def get_changed_files(current_manifest, previous_manifest):
+    changed_files = []
+    for filepath, current_hash in current_manifest.items():
+        previous_hash = previous_manifest.get(filepath)
+        if current_hash != previous_hash:
+            changed_files.append(filepath)
+    return changed_files
+
+# Download file from server
 def download_file(relative_path):
     file_url = f"{base_file_url}/{relative_path}"
     local_path = os.path.join(os.getcwd(), relative_path)
-
-    # Ensure the directory exists
     os.makedirs(os.path.dirname(local_path), exist_ok=True)
-
-    # Download and save the file
     response = requests.get(file_url)
     if response.status_code == 200:
         with open(local_path, "wb") as file:
@@ -49,25 +56,44 @@ def download_file(relative_path):
     else:
         print(f"Failed to download {relative_path}")
 
-# Check each file in the remote manifest and update if needed
-for relative_path, remote_hash in remote_manifest.items():
-    # Skip excluded files
-    if f"assets/{relative_path}" in excluded_files:
-        continue
+# Main update function
+def check_for_updates():
+    local_version = get_local_version()
+    remote_version = get_remote_version()
 
-    local_path = os.path.join(relative_path)
-    if os.path.exists(local_path):
-        local_hash = calculate_sha256(local_path)
-        if local_hash != remote_hash:
-            print(f"Updating {relative_path}")
-            download_file(relative_path)
+    if not remote_version:
+        return
+
+    if remote_version > local_version:
+        print(f"New version {remote_version} available! Updating...")
+
+        # Step 1: Download and save the remote manifest
+        response = requests.get(manifest_url)
+        if response.status_code == 200:
+            remote_manifest = response.json()
+            save_json(local_manifest_path, remote_manifest)
+        else:
+            print("Failed to download the remote manifest.")
+            return
+
+        # Load previous manifest for comparison
+        previous_manifest = load_json(previous_manifest_path) if os.path.exists(previous_manifest_path) else {}
+
+        # Step 2: Get changed files
+        changed_files = get_changed_files(remote_manifest, previous_manifest)
+
+        # Step 3: Download each changed file
+        for file in changed_files:
+            download_file(file)
+
+        # Step 4: Update version.json and previous manifest
+        save_json(version_file_path, {"version": remote_version})
+        save_json(previous_manifest_path, remote_manifest)
+
+        print("Update complete.")
     else:
-        print(f"Downloading missing file {relative_path}")
-        download_file(relative_path)
+        print("Application is up to date.")
 
-# Update local manifest after download
-with open(local_manifest_path, "w") as manifest_file:
-    json.dump(remote_manifest, manifest_file, indent=4)
-
-print("Update process complete.")
+# Run the update check
+check_for_updates()
 

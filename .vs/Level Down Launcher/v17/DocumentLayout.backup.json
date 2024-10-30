@@ -3,11 +3,11 @@
   "WorkspaceRootPath": "C:\\Users\\dcann\\source\\repos\\Level Down Launcher\\Level Down Launcher\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\dcann\\manifest2.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\dcann\\source\\repos\\Level Down Launcher\\Level Down Launcher\\update_manager.py||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:update_manager.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\dcann\\manifest2.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\dcann\\source\\repos\\Level Down Launcher\\Level Down Launcher\\dist\\assets\\config\\version.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
@@ -53,7 +53,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -65,7 +65,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "manifest2.json",
               "DocumentMoniker": "C:\\Users\\dcann\\manifest2.json",
               "RelativeDocumentMoniker": "..\\..\\..\\..\\manifest2.json",
@@ -139,13 +139,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "update_manager.py",
               "DocumentMoniker": "C:\\Users\\dcann\\source\\repos\\Level Down Launcher\\Level Down Launcher\\update_manager.py",
               "RelativeDocumentMoniker": "update_manager.py",
               "ToolTip": "C:\\Users\\dcann\\source\\repos\\Level Down Launcher\\Level Down Launcher\\update_manager.py",
               "RelativeToolTip": "update_manager.py",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAABMAAAAXAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-10-28T16:01:37.788Z",
               "EditorCaption": ""
