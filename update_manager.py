@@ -57,7 +57,7 @@ def download_file(relative_path):
         print(f"Failed to download {relative_path}")
 
 # Main update function
-def check_for_updates():
+def check_for_update():
     local_version = get_local_version()
     remote_version = get_remote_version()
 
@@ -95,5 +95,5 @@ def check_for_updates():
         print("Application is up to date.")
 
 # Run the update check
-check_for_updates()
+check_for_update()
 
