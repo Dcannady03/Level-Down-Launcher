@@ -8,9 +8,11 @@ local_manifest_path = "assets/config/manifest.json"
 previous_manifest_path = "assets/config/previous_manifest.json"
 version_file_path = "assets/config/version.json"
 
-manifest_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher/assets/config/manifest.json"
-version_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher/assets/config/version.json"
-base_file_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/dist/LevelDownLauncher"
+manifest_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/update_files/assets/config/manifest.json"
+base_file_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/update_files"
+
+version_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/LevelDownLauncher/assets/config/version.json"
+
 
 # Load JSON file
 def load_json(path):

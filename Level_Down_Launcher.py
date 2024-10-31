@@ -13,7 +13,7 @@ from wiki_update_scraper import fetch_updates  # Import the scraper function
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QGridLayout, QWidget, QPushButton, QLabel,
     QStatusBar, QMessageBox, QFileDialog, QMenuBar, QAction, QSizePolicy, QSpacerItem,
-    QListWidget, QListWidgetItem, QFrame
+    QListWidget, QListWidgetItem, QFrame, QScrollArea,QTextEdit
 )
 from PyQt5.QtGui import QPixmap, QIcon, QFont, QColor
 from PyQt5.QtCore import QSize, Qt, QTimer, QUrl
@@ -61,6 +61,10 @@ class LauncherMainWindow(QMainWindow):
         self.setup_ui()
         self.check_for_updates()
 
+        # Set up the timer to refresh updates periodically
+        self.update_timer = QTimer(self)
+        self.update_timer.timeout.connect(self.refresh_updates)
+        self.update_timer.start(10000)  # Refresh every 10 minutes (600,000 ms)
     def setup_menu_bar(self):
         """Set up dark-themed menu bar."""
         menu_bar = self.menuBar()
@@ -126,40 +130,77 @@ class LauncherMainWindow(QMainWindow):
         return button_with_image_layout
     
 
+    
     def add_updates(self, layout):
-        # Add a spacer item to push the update list further down
-        top_spacer = QSpacerItem(20, 200, QSizePolicy.Minimum, QSizePolicy.Fixed)  # Adjust height here as needed
+        top_spacer = QSpacerItem(20, 200, QSizePolicy.Minimum, QSizePolicy.Fixed)
         layout.addSpacerItem(top_spacer)
 
-        # Fetch updates and create the list widget
-        updates = fetch_updates()
-        self.update_list_widget = QListWidget()
-        self.update_list_widget.setStyleSheet("""
-            QListWidget {
+        # Create a QTextEdit for displaying updates with scrolling enabled
+        self.update_text_edit = QTextEdit()
+        self.update_text_edit.setReadOnly(True)  # Make it read-only
+        self.update_text_edit.setStyleSheet("""
+            QTextEdit {
                 background-color: #2e2e2e;
                 color: #ffffff;
                 border: 1px solid #5e5e5e;
-            }
-            QListWidget::item {
+                font-size: 14px;  /* Adjust this value to change font size */
                 padding: 10px;
             }
-            QListWidget::item:selected {
-                background-color: #3e3e3e;
-            }
         """)
+
+        # Set the height and enable scroll bars
+        self.update_text_edit.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.update_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.update_text_edit.setFixedWidth(1180)
+        #self.update_text_edit.setFixedHeight(300)  # Adjust the height for better readability
+
+        # Fetch and display updates
+        self.refresh_updates()
+
+        # Add the QTextEdit to the layout directly
+        layout.addWidget(self.update_text_edit)
+
+    def fetch_updates(self):
+        # URL of the update notification file in your GitHub repository
+        url = "https://raw.githubusercontent.com/Dcannady03/discord-update-bot/main/update_notification.txt"
+        updates = []
+
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                content = response.text.strip()
+                updates.append({"title": "Discord Update", "description": content})
+            else:
+                updates.append({"title": "No New Updates", "description": "No new updates from Discord at this time."})
+        except requests.RequestException as e:
+            print(f"Error fetching updates: {e}")
+            updates.append({"title": "Error", "description": "Failed to fetch updates due to a network error."})
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            updates.append({"title": "Error", "description": "An unexpected error occurred while fetching updates."})
+
+        return updates
+
+    def refresh_updates(self):
+        """Refreshes the update text edit widget only if there are new updates."""
+        updates = self.fetch_updates()
     
-        # Adjust the widget’s fixed size
-        self.update_list_widget.setFixedHeight(150)  # Adjust height as needed
-        self.update_list_widget.setFixedWidth(1180)   # Adjust width as needed
-
-        # Populate the list widget with updates
+        # Combine all updates into a single text string
+        new_content = ""
         for update in updates:
-            item_text = f"{update['title']}\n{update['description']}"
-            list_item = QListWidgetItem(item_text)
-            self.update_list_widget.addItem(list_item)
+            new_content += f"{update['title']}\n{update['description']}\n\n"
 
-        # Add the update widget to the layout
-        layout.addWidget(self.update_list_widget)
+        # Check if the current content matches the new content
+        if self.update_text_edit.toPlainText().strip() == new_content.strip():
+            # Skip update if content hasn't changed
+            print("No new updates, skipping refresh.")
+            return
+    
+        # Update the text if there's new content
+        self.update_text_edit.clear()  # Clear the text box before reloading
+        self.update_text_edit.setPlainText(new_content)
+        print("Updates refreshed.")
+
     def check_for_updates(self):
         """Checks for updates and starts the loading bar if necessary."""
         url = "https://api.github.com/repos/Dcannady03/LD-launcher/releases/latest"
