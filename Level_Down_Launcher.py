@@ -5,6 +5,7 @@ import json
 import time
 import requests
 import subprocess
+import threading 
 import webbrowser
 import feedparser  # For parsing the RSS feed
 from rss_feed_widget import RSSFeedWidget
@@ -23,11 +24,17 @@ from utils import load_config, save_config, load_version, save_version
 from custom_web_engine import CustomWebEngineView
 from login_dialog import LoginDialog
 #from rss_feed import fetch_rss_feed  # Import the RSS feed function
+from update_manager import check_for_update, get_remote_version, get_local_version
+
 
 
 # Paths to config and version files
 CONFIG_PATH = "assets/config/config.json"
 VERSION_PATH = "assets/config/version.json"
+previous_manifest_path = "assets/config/previous_manifest.json"
+#base_file_url = "https://raw.githubusercontent.com/Dcannady03/Level-Down-Launcher/update/update_files"
+
+
 
 # Default configuration
 default_config = {
@@ -35,7 +42,7 @@ default_config = {
     "windower_exe": "",
     "xi_loader_exe": "assets/config/xiLoader.exe"
 }
-default_version = {"launcher_version": "1.0.1"}
+default_version = {"version": "1.0."}
 
 # Ensure configuration files exist with default values if missing
 def create_file_if_not_exists(path, default_content):
@@ -46,6 +53,8 @@ def create_file_if_not_exists(path, default_content):
 
 create_file_if_not_exists(CONFIG_PATH, default_config)
 create_file_if_not_exists(VERSION_PATH, default_version)
+
+
 
 class LauncherMainWindow(QMainWindow):
     def __init__(self):
@@ -64,7 +73,49 @@ class LauncherMainWindow(QMainWindow):
         # Set up the timer to refresh updates periodically
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.refresh_updates)
-        self.update_timer.start(10000)  # Refresh every 10 minutes (600,000 ms)
+        self.update_timer.start(1000)  # Refresh every 10 minutes (600,000 ms)
+        # utils.py or wherever load_version is defined
+    def load_version():
+        """Loads the version information from version.json."""
+        version_path = "assets/config/version.json"
+        if os.path.exists(version_path):
+            with open(version_path, "r") as file:
+                data = json.load(file)
+                return data.get("version", "0.0")  # Fallback to "0.0" if version key is missing
+        else:
+            return "0.0"  # Fallback if version.json is missing
+
+    def check_for_updates(self):
+        """Checks for updates and initiates the update process if needed."""
+        local_version = get_local_version()
+        remote_version = get_remote_version()
+
+        if remote_version and remote_version > local_version:
+            print(f"New version {remote_version} available. Starting update...")
+            self.start_loading_bar()  # Starts the progress bar animation
+            update_thread = threading.Thread(target=self.perform_update)
+            update_thread.start()
+        else:
+            print("No updates found. Application is up to date.")
+            self.update_progress(100)  # Set the progress bar to full if no update is needed
+
+    def perform_update(self):
+        """Performs the update process and provides feedback on progress."""
+        # Simulate the update process with step-by-step progress updates
+        try:
+            total_steps = 5  # Set the number of steps or files for the update process
+            for step in range(1, total_steps + 1):
+                time.sleep(1)  # Simulate a time delay for each step
+                progress = int((step / total_steps) * 100)
+                self.update_progress(progress)  # Update progress incrementally
+
+            print("Update complete.")
+        except Exception as e:
+            print(f"Update failed: {e}")
+        finally:
+            self.update_progress(100)  # Ensure the progress bar is set to full at the end
+
+
     def setup_menu_bar(self):
         """Set up dark-themed menu bar."""
         menu_bar = self.menuBar()
@@ -83,7 +134,7 @@ class LauncherMainWindow(QMainWindow):
         windower_action.triggered.connect(self.set_windower_exe)
         settings_menu.addAction(windower_action)
 
-
+    
     def set_background_image(self):
         background_path = os.path.join(os.getcwd(), "assets", "images", "wallpaper.png")
         background_label = QLabel(self.central_widget)
@@ -96,7 +147,7 @@ class LauncherMainWindow(QMainWindow):
             background_label.lower()
         else:
             QMessageBox.warning(self, "Error", f"Failed to load background image from {background_path}")
-
+    
     def setup_ui(self):
         """Set up UI layout and components."""
         layout = QVBoxLayout(self.central_widget)
@@ -105,12 +156,27 @@ class LauncherMainWindow(QMainWindow):
         self.add_sidebar_with_buttons(top_layout)
         layout.addLayout(top_layout)
         self.add_updates(layout)
-        self.progress_bar_label = QLabel(self)
-        self.update_progress_bar(300, 100)
-        layout.addWidget(self.progress_bar_label, alignment=Qt.AlignCenter | Qt.AlignBottom)
+
+        # Create a main progress bar container
+        self.progress_bar_container = QWidget(self)
+        self.progress_bar_container.setFixedSize(900, 10)
+        self.progress_bar_container.setStyleSheet("background-color: #3e3e3e; border: 2px solid #2e2e2e;")
+
+        # Create a fill widget inside the container
+        self.progress_fill = QWidget(self.progress_bar_container)
+        self.progress_fill.setStyleSheet("background-color: #0078d4;")
+        self.progress_fill.resize(0, 10)  # Start with no fill
+
+        layout.addWidget(self.progress_bar_container, alignment=Qt.AlignCenter | Qt.AlignBottom)
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage(f"Launcher Version: {self.launcher_version}")
+
+    def update_progress(self, percentage_progress=0):
+        """Update the width of the fill widget to simulate progress."""
+        max_width = self.progress_bar_container.width()
+        new_width = int(max_width * (percentage_progress / 100))
+        self.progress_fill.resize(new_width, 10)  # Adjust height as needed
 
     def create_button_with_image(self, image_path, callback, image_below_path, button_size=(50, 50), icon_size=(50, 50), image_below_size=(100, 40)):
         button_with_image_layout = QVBoxLayout()
@@ -129,8 +195,8 @@ class LauncherMainWindow(QMainWindow):
 
         return button_with_image_layout
     
-
     
+       
     def add_updates(self, layout):
         top_spacer = QSpacerItem(20, 200, QSizePolicy.Minimum, QSizePolicy.Fixed)
         layout.addSpacerItem(top_spacer)
@@ -159,7 +225,8 @@ class LauncherMainWindow(QMainWindow):
 
         # Add the QTextEdit to the layout directly
         layout.addWidget(self.update_text_edit)
-
+    # Save JSON file
+    
     def fetch_updates(self):
         # URL of the update notification file in your GitHub repository
         url = "https://raw.githubusercontent.com/Dcannady03/discord-update-bot/main/update_notification.txt"
@@ -193,64 +260,15 @@ class LauncherMainWindow(QMainWindow):
         # Check if the current content matches the new content
         if self.update_text_edit.toPlainText().strip() == new_content.strip():
             # Skip update if content hasn't changed
-            print("No new updates, skipping refresh.")
+            #print("No new updates, skipping refresh.")
             return
     
         # Update the text if there's new content
         self.update_text_edit.clear()  # Clear the text box before reloading
         self.update_text_edit.setPlainText(new_content)
-        print("Updates refreshed.")
-
-    def check_for_updates(self):
-        """Checks for updates and starts the loading bar if necessary."""
-        url = "https://api.github.com/repos/Dcannady03/LD-launcher/releases/latest"
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                latest_version = response.json()["tag_name"]
-                if latest_version != self.launcher_version:
-                    self.start_loading_bar()
-            else:
-                print("Failed to fetch release information.")
-                self.update_progress_bar(100)
-        except Exception as e:
-            print(f"Error checking for updates: {e}")
-            self.update_progress_bar(100)
-
-    def start_loading_bar(self):
-        """Starts a simulated loading bar to update the UI."""
-        self.progress = 0
-        self.progress_timer = QTimer(self)
-        self.progress_timer.timeout.connect(self.update_progress)
-        self.progress_timer.start(500)
-
-    def update_progress(self):
-        """Updates the progress bar visuals and increments the progress value."""
-        if self.progress >= 100:
-            self.progress_timer.stop()
-            self.update_progress_bar(900, 40)
-        else:
-            self.progress += 25
-            self.update_progress_bar(900, 40)
-
-    def update_progress_bar(self, width, height):
-        """Updates the loading bar's visual representation based on the progress."""
-        image_path = {
-            0: "assets/images/loadingbar 0.png",
-            10: "assets/images/loadingbar 10 copy.png",
-            25: "assets/images/loadingbar 25 copy.png",
-            50: "assets/images/loadingbar 50 copy.png",
-            75: "assets/images/loadingbar 75 copy.png",
-            100: "assets/images/loadingbar 1000 copy.png"
-        }.get(self.progress, "assets/images/loadingbar 0.png")
-
-        pixmap = QPixmap(image_path)
-        if not pixmap.isNull():
-            self.progress_bar_label.setPixmap(pixmap.scaled(width, height, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            self.progress_bar_label.setFixedSize(width, height)
-            self.progress_bar_label.setAlignment(Qt.AlignCenter)
-        else:
-            print("Failed to load progress bar image.")
+        #print("Updates refreshed.")
+    
+    
 
     def add_sidebar_with_buttons(self, layout):
         sidebar_widget = QWidget()
@@ -272,23 +290,6 @@ class LauncherMainWindow(QMainWindow):
         grid_layout.setContentsMargins(35, 50, 0, 0)
         sidebar_widget.setLayout(grid_layout)
         layout.addWidget(sidebar_widget, alignment=Qt.AlignLeft)
-
-
-    
-
-    #def add_web_browser(self, layout):
-        # Create a spacer item to push the news view down
-     #   spacer = QSpacerItem(20, 300, QSizePolicy.Minimum, QSizePolicy.Fixed)  # Adjust height here as needed
-      #  layout.addSpacerItem(spacer)
-    
-        # Create the web view
-       # news_view = CustomWebEngineView()
-      #  news_view.setUrl(QUrl("https://cdn.mysitemapgenerator.com/shareapi/rss/2610832342"))
-       # news_view.setFixedHeight(100)
-    
-        # Add the web view to the layout
-        #layout.addWidget(news_view)
-
 
     def launch_ashita(self):
         if self.config.get("ashita_exe"):
