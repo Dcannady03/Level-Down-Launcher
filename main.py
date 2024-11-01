@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from update_manager import check_for_update
 from Level_Down_Launcher import LauncherMainWindow
+import os
 
 class ApplicationManager:
     def __init__(self):
@@ -15,7 +16,7 @@ class ApplicationManager:
 
         # Launch main application
         self.launch_main_window()
-
+    
     def launch_main_window(self):
         print("Launching main window")
         self.main_window = LauncherMainWindow()
